@@ -2139,7 +2139,12 @@ const motivationalQuotes = [
                   )}
                 </>
               )}
-              {filteredEquipment.map(id => {advice = best && settings?.showSuggestions ? getProgressionAdvice(sessions, best) : null;
+              {filteredEquipment.map(id => {
+                const eq = EQUIPMENT_DB[id];
+                const sessions = history[id] || [];
+                const best = getBestForEquipment(sessions);
+                const nextTarget = getNextTarget(profile, id, best);
+                const advice = best && settings?.showSuggestions ? getProgressionAdvice(sessions, best) : null;
 
                 return (
                   <div key={id} onClick={() => onEquipmentSelect(id)} className="bg-white p-2 rounded-xl border border-gray-100 active:scale-[0.98] transition-transform cursor-pointer shadow-sm relative">
