@@ -1926,7 +1926,7 @@ const motivationalQuotes = [
     };
 
     // ========== WORKOUT SCREEN ==========
-    const Workout = ({ profile, setProfile, history, onEquipmentSelect, settings, setSettings, todayWorkoutType }) => {
+    const Workout = ({ profile, setProfile, history, onEquipmentSelect, onOpenCardio, settings, setSettings, todayWorkoutType }) => {
       const [filter, setFilter] = useState('All');
       const [showMore, setShowMore] = useState(false);
       const [showGymPicker, setShowGymPicker] = useState(false);
@@ -2130,29 +2130,26 @@ const motivationalQuotes = [
             )}
 
             <div className="p-4 grid grid-cols-3 gap-2">
-              {visibleCardio.map(cardio => {
-                const theme = cardio.key === 'running'
-                  ? { border: 'border-orange-200', badge: 'bg-orange-50 text-orange-700 border-orange-200', background: 'bg-orange-50' }
-                  : { border: 'border-cyan-200', badge: 'bg-cyan-50 text-cyan-700 border-cyan-200', background: 'bg-cyan-50' };
-
-                return (
-                  <button
-                    key={cardio.key}
-                    onClick={() => onOpenCardio(cardio.key)}
-                    className={`relative p-4 rounded-2xl bg-white border-2 ${theme.border} active:scale-95 transition-all text-left shadow-sm overflow-hidden`}
-                  >
-                    <div className={`absolute inset-0 ${theme.background} opacity-50 pointer-events-none`} />
-                    <div className="relative flex items-center justify-between mb-2">
-                      <div className={`px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wide border ${theme.badge}`}>
-                        Cardio
-                      </div>
-                      <div className="text-2xl">{cardio.emoji}</div>
+              {visibleCardio.map(cardio => (
+                <button
+                  key={cardio.key}
+                  onClick={() => onOpenCardio(cardio.key)}
+                  className="bg-white p-2 rounded-xl border border-gray-100 active:scale-[0.98] transition-transform cursor-pointer shadow-sm relative text-center"
+                >
+                  <div className="text-center mb-1">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-purple-50 text-purple-600 mx-auto mb-1 text-lg">
+                      <span className="text-xl">{cardio.emoji}</span>
                     </div>
-                    <div className="relative font-black text-gray-900 text-sm leading-tight">{cardio.name}</div>
-                    <div className="relative text-xs text-gray-600 mt-1">Log time, distance, pace</div>
-                  </button>
-                );
-              })}
+                    <h3 className="font-bold text-gray-900 text-[10px] leading-tight mb-0.5">{cardio.name}</h3>
+                    <p className="text-[9px] text-gray-400">Cardio</p>
+                  </div>
+
+                  <div className="text-center pt-1 border-t border-gray-100">
+                    <div className="text-[9px] font-bold text-gray-400 uppercase">Track</div>
+                    <div className="text-sm font-black text-purple-600">Time + Distance</div>
+                  </div>
+                </button>
+              ))}
               {filteredEquipment.map(id => {
                 const eq = EQUIPMENT_DB[id];
                 const sessions = history[id] || [];
@@ -3910,6 +3907,7 @@ const motivationalQuotes = [
                       setProfile={setProfile}
                       history={history}
                       onEquipmentSelect={setActiveEquipment}
+                      onOpenCardio={(type) => setActiveCardio(type)}
                       settings={settings}
                       setSettings={setSettings}
                       todayWorkoutType={todayWorkoutType}
