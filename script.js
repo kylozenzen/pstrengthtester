@@ -230,11 +230,11 @@ const { useState, useEffect, useMemo } = React;
     ];
 
     // ========== CARDIO TYPES ==========
-    const CARDIO_TYPES = {
-      swimming: {
-        name: 'Swimming',
-        emoji: '🏊',
-        color: 'cyan',
+const CARDIO_TYPES = {
+  swimming: {
+    name: 'Swimming',
+    emoji: '🏊',
+    color: 'cyan',
         regularActivities: [
           { id: 'laps', label: 'Swimming Laps', emoji: '🏊' },
           { id: 'water_walk', label: 'Water Walking', emoji: '🚶' },
@@ -1942,15 +1942,35 @@ const motivationalQuotes = [
           if (eq.type === 'machine') return gymType?.machines;
           if (eq.type === 'dumbbell') return gymType?.dumbbells?.available;
           if (eq.type === 'barbell') return gymType?.barbells?.available;
-          return false;
-        });
-      }, [gymType]);
+      return false;
+    });
+  }, [gymType]);
 
-      const filteredEquipment = useMemo(() => {
-        const allEquipment = Object.keys(EQUIPMENT_DB);
-        
-        let result = [];
-        
+  const visibleCardio = useMemo(() => {
+    if (!(filter === 'All' || filter === 'Cardio')) return [];
+
+    const query = searchQuery.trim().toLowerCase();
+
+    const matchesQuery = (cardio) => {
+      if (!query) return true;
+      const haystack = [
+        cardio.name,
+        'cardio',
+        ...(cardio.regularActivities || []).map(a => a.label)
+      ].join(' ').toLowerCase();
+      return haystack.includes(query);
+    };
+
+    return Object.entries(CARDIO_TYPES)
+      .filter(([, data]) => matchesQuery(data))
+      .map(([key, data]) => ({ key, ...data }));
+  }, [filter, searchQuery]);
+
+  const filteredEquipment = useMemo(() => {
+    const allEquipment = Object.keys(EQUIPMENT_DB);
+    
+    let result = [];
+    
         if (filter === 'All') result = availableEquipment;
         else if (filter === 'Machines') result = allEquipment.filter(id => EQUIPMENT_DB[id].type === 'machine');
         else if (filter === 'Dumbbells') result = allEquipment.filter(id => EQUIPMENT_DB[id].type === 'dumbbell');
@@ -1978,29 +1998,30 @@ const motivationalQuotes = [
         }
 
         // Apply search filter
-        if (searchQuery.trim()) {
-          const query = searchQuery.toLowerCase();
-          result = result.filter(id => 
-            EQUIPMENT_DB[id].name.toLowerCase().includes(query) ||
-            EQUIPMENT_DB[id].target.toLowerCase().includes(query)
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(id => 
+        EQUIPMENT_DB[id].name.toLowerCase().includes(query) ||
+        EQUIPMENT_DB[id].target.toLowerCase().includes(query)
           );
         }
 
         // Apply favorites filter
         if (viewMode === 'favorites') {
           const pinnedIds = settings?.pinnedExercises || [];
-          result = result.filter(id => pinnedIds.includes(id));
-        }
-        
-        return result;
-      }, [filter, availableEquipment, todayWorkoutType, gymType, settings?.showAllExercises, showMore, searchQuery, viewMode, settings?.pinnedExercises, profile.beginnerMode, profile.beginnerUnlocked]);
+        result = result.filter(id => pinnedIds.includes(id));
+      }
+      
+      return result;
+  }, [filter, availableEquipment, todayWorkoutType, gymType, settings?.showAllExercises, showMore, searchQuery, viewMode, settings?.pinnedExercises, profile.beginnerMode, profile.beginnerUnlocked]);
 
-      const filters = ['All', 'Today', 'Cardio', 'Machines', 'Dumbbells', 'Barbells', 'Push', 'Pull', 'Legs'];
+  const filters = ['All', 'Today', 'Cardio', 'Machines', 'Dumbbells', 'Barbells', 'Push', 'Pull', 'Legs'];
+  const totalVisibleExercises = filteredEquipment.length + visibleCardio.length;
 
-      const getLastDate = (id) => {
-        const sessions = history[id] || [];
-        if (sessions.length === 0) return null;
-        return new Date(sessions[sessions.length - 1].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const getLastDate = (id) => {
+    const sessions = history[id] || [];
+    if (sessions.length === 0) return null;
+    return new Date(sessions[sessions.length - 1].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       };
 
       const togglePin = (id, e) => {
@@ -2029,7 +2050,7 @@ const motivationalQuotes = [
                 <div>
                   <h1 className="text-2xl font-black text-gray-900">Workout</h1>
                   <div className="text-xs text-gray-400 font-bold">
-                    {filter === 'Today' ? `Today: ${todayWorkoutType} Day` : `${filteredEquipment.length} exercises`}
+                    {filter === 'Today' ? `Today: ${todayWorkoutType} Day` : `${totalVisibleExercises} exercises`}
                   </div>
                 </div>
                 <button 
@@ -2109,36 +2130,29 @@ const motivationalQuotes = [
             )}
 
             <div className="p-4 grid grid-cols-3 gap-2">
-              {(filter === 'All' || filter === 'Cardio') && (
-                <>
-                  {(!searchQuery.trim() || 'swimming'.includes(searchQuery.toLowerCase()) || 'cardio'.includes(searchQuery.toLowerCase()) || 'swim'.includes(searchQuery.toLowerCase())) && (
-                    <button
-                      onClick={() => onOpenCardio('swimming')}
-                      className="p-4 rounded-2xl border border-cyan-200 bg-cyan-50 hover:bg-cyan-100 transition-all active:scale-95 text-left shadow-sm"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="text-2xl">🏊</div>
-                        <div className="text-[10px] font-black uppercase tracking-wide text-cyan-700">Cardio</div>
+              {visibleCardio.map(cardio => {
+                const theme = cardio.key === 'running'
+                  ? { border: 'border-orange-200', badge: 'bg-orange-50 text-orange-700 border-orange-200', background: 'bg-orange-50' }
+                  : { border: 'border-cyan-200', badge: 'bg-cyan-50 text-cyan-700 border-cyan-200', background: 'bg-cyan-50' };
+
+                return (
+                  <button
+                    key={cardio.key}
+                    onClick={() => onOpenCardio(cardio.key)}
+                    className={`relative p-4 rounded-2xl bg-white border-2 ${theme.border} active:scale-95 transition-all text-left shadow-sm overflow-hidden`}
+                  >
+                    <div className={`absolute inset-0 ${theme.background} opacity-50 pointer-events-none`} />
+                    <div className="relative flex items-center justify-between mb-2">
+                      <div className={`px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wide border ${theme.badge}`}>
+                        Cardio
                       </div>
-                      <div className="font-black text-gray-900 text-sm leading-tight">Swimming</div>
-                      <div className="text-xs text-gray-600 mt-1">Log time, distance, pace</div>
-                    </button>
-                  )}
-                  {(!searchQuery.trim() || 'running'.includes(searchQuery.toLowerCase()) || 'cardio'.includes(searchQuery.toLowerCase()) || 'run'.includes(searchQuery.toLowerCase())) && (
-                    <button
-                      onClick={() => onOpenCardio('running')}
-                      className="p-4 rounded-2xl border border-orange-200 bg-orange-50 hover:bg-orange-100 transition-all active:scale-95 text-left shadow-sm"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="text-2xl">🏃</div>
-                        <div className="text-[10px] font-black uppercase tracking-wide text-orange-700">Cardio</div>
-                      </div>
-                      <div className="font-black text-gray-900 text-sm leading-tight">Running</div>
-                      <div className="text-xs text-gray-600 mt-1">Log time, distance, pace</div>
-                    </button>
-                  )}
-                </>
-              )}
+                      <div className="text-2xl">{cardio.emoji}</div>
+                    </div>
+                    <div className="relative font-black text-gray-900 text-sm leading-tight">{cardio.name}</div>
+                    <div className="relative text-xs text-gray-600 mt-1">Log time, distance, pace</div>
+                  </button>
+                );
+              })}
               {filteredEquipment.map(id => {
                 const eq = EQUIPMENT_DB[id];
                 const sessions = history[id] || [];
@@ -2198,7 +2212,7 @@ const motivationalQuotes = [
                 );
               })}
 
-              {filteredEquipment.length === 0 && (
+              {totalVisibleExercises === 0 && (
                 <div className="col-span-3 text-center py-12 px-4">
                   <div className="text-4xl mb-3">{viewMode === 'favorites' ? '⭐' : searchQuery ? '🔍' : '🤔'}</div>
                   {viewMode === 'favorites' ? (
