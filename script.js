@@ -20,10 +20,14 @@ const { useState, useEffect, useMemo } = React;
     };
     const manifestBlob = new Blob([JSON.stringify(MANIFEST)], { type: 'application/json' });
     const manifestURL = URL.createObjectURL(manifestBlob);
-    document.getElementById('manifest-placeholder').setAttribute('href', manifestURL);
+    // Some hosts/templates may omit the placeholder link; guard to avoid hard crashes.
+    const manifestLink = document.getElementById('manifest-placeholder');
+    if (manifestLink) manifestLink.setAttribute('href', manifestURL);
 
     // Register service worker
-    if ('serviceWorker' in navigator) {
+    // Register service worker only on supported origins (not file://)
+    const isSecureContextOk = location.protocol === 'https:' || location.hostname === 'localhost';
+    if (isSecureContextOk && 'serviceWorker' in navigator) {
       const SW_CODE = `
         const CACHE = 'ps-v2';
         self.addEventListener('install', e => {
